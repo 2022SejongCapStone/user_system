@@ -1,80 +1,140 @@
 import sys
 import time
+import threading
+import cv2
+import numpy
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
 
 class Main(QDialog):
+    
     def __init__(self):
         super().__init__()
-        self.init_ui()
+        self.path = '../src/search.mp4'
+        self.initUI()
+        self.setValueforWidget()
+        self.thread = threading.Thread(target=self.viewVideo, args=[])
+        self.thread.daemon = True
+        self.thread.start()
 
-    def init_ui(self):
-        main_layout = QVBoxLayout()
+    def initUI(self):
+        self.main_layout = QVBoxLayout()
 
-        frame_1 = QFrame()
-        frame_1.setFrameShape(QFrame.Panel | QFrame.Sunken)
-        frame_2 = QFrame()
-        frame_2.setFrameShape(QFrame.Panel | QFrame.Sunken)
-        frame_3 = QFrame()
-        frame_3.setFrameShape(QFrame.Panel | QFrame.Sunken)
+        self.frame_1 = QFrame()
+        self.frame_1.setFrameShape(QFrame.Panel | QFrame.Sunken)
+        self.frame_2 = QFrame()
+        self.frame_2.setFrameShape(QFrame.Panel | QFrame.Sunken)
+        self.frame_3 = QFrame()
+        self.frame_3.setFrameShape(QFrame.Panel | QFrame.Sunken)
 
-        layout_1 = QVBoxLayout()
-        layout_2 = QVBoxLayout()
-        layout_3 = QVBoxLayout()
+        self.layout_1 = QVBoxLayout()
+        self.layout_2 = QVBoxLayout()
+        self.layout_3 = QVBoxLayout()
         
-        table = self.make_table()
-        layout_2.addWidget(table)
-        table = self.make_table()
-        layout_2.addWidget(table)
-
-        frame_1.setLayout(layout_1)
-        frame_2.setLayout(layout_2)
-        frame_3.setLayout(layout_3)
-
-        spliter_1 = QSplitter(Qt.Horizontal)
-        spliter_1.addWidget(frame_1)
-        spliter_1.addWidget(frame_2)
-
-        spliter_2 = QSplitter(Qt.Vertical)
-        spliter_2.addWidget(spliter_1)
-        spliter_2.addWidget(frame_3)
+        self.groupbox_1 = QGroupBox('Incoming Packet Content')
+        self.vbox_1 = QVBoxLayout()
+        self.label_1 = QLabel('0', self)
+        self.vbox_1.addWidget(self.label_1)
+        self.groupbox_1.setLayout(self.vbox_1)
+        self.layout_2.addWidget(self.groupbox_1)
         
-        spliter_1.setSizes([1500, 420])
-        spliter_2.setSizes([800, 280])
+        self.groupbox_2 = QGroupBox('Most Similar File')
+        self.hbox_1 = QHBoxLayout()
+        self.hbox_2 = QHBoxLayout()
+        self.vbox_2 = QVBoxLayout()
+        self.label_2 = QLabel('0', self)
+        self.label_3 = QLabel('File Name', self)
+        self.label_4 = QLabel('0', self)
+        self.label_5 = QLabel('Similarity', self)
+        self.hbox_1.addWidget(self.label_3)
+        self.hbox_1.addWidget(self.label_2)
+        self.hbox_2.addWidget(self.label_5)
+        self.hbox_2.addWidget(self.label_4)
+        self.vbox_2.addLayout(self.hbox_1)
+        self.vbox_2.addLayout(self.hbox_2)
+        self.groupbox_2.setLayout(self.vbox_2)
+        self.layout_2.addWidget(self.groupbox_2)
+        
+        self.groupbox_3 = QGroupBox('Compute Status')
+        self.hbox_3 = QHBoxLayout()
+        self.hbox_4 = QHBoxLayout()
+        self.vbox_3 = QVBoxLayout()
+        self.progress_1 = QProgressBar(self)
+        self.label_6 = QLabel('CPU Speed', self)
+        self.progress_2 = QProgressBar(self)
+        self.label_7 = QLabel('Memory usage', self)
+        self.hbox_3.addWidget(self.label_6)
+        self.hbox_3.addWidget(self.progress_1)
+        self.hbox_4.addWidget(self.label_7)
+        self.hbox_4.addWidget(self.progress_2)
+        self.vbox_3.addLayout(self.hbox_3)
+        self.vbox_3.addLayout(self.hbox_4)
+        self.groupbox_3.setLayout(self.vbox_3)
+        self.layout_2.addWidget(self.groupbox_3)
+        
+        self.textedit = QTextEdit()
+        self.textedit.setReadOnly(True)
+        self.layout_3.addWidget(self.textedit)
+        
+        self.label_8 = QLabel()
+        self.layout_1.addWidget(self.label_8)
 
-        main_layout.addWidget(spliter_2)
+        self.frame_1.setLayout(self.layout_1)
+        self.frame_2.setLayout(self.layout_2)
+        self.frame_3.setLayout(self.layout_3)
 
-        self.setLayout(main_layout)
+        self.spliter_1 = QSplitter(Qt.Horizontal)
+        self.spliter_1.addWidget(self.frame_1)
+        self.spliter_1.addWidget(self.frame_2)
+
+        self.spliter_2 = QSplitter(Qt.Vertical)
+        self.spliter_2.addWidget(self.spliter_1)
+        self.spliter_2.addWidget(self.frame_3)
+        
+        self.spliter_1.setSizes([1500, 420])
+        self.spliter_2.setSizes([800, 280])
+
+        self.main_layout.addWidget(self.spliter_2)
+
+        self.setLayout(self.main_layout)
         self.setWindowTitle('DarkWeb Monitoring System User View')
-        # self.resize(1920, 1080)
-        # self.show()
         self.showMaximized()
         
-    def make_table(self):
-        table = QTableWidget(self)
-        table.resize(300, 200)
-        table.setColumnCount(1)
-        table.setRowCount(5)
-        table.horizontalHeader().setVisible(False)
-        header = table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        table.setVerticalHeaderLabels(
-            ['파일 이름', '수신 데이터', '발견한 URL', '비교 대상', '유사도']
-        )
+        
+    def setValueforWidget(self):
+        self.progress_1.setValue(80)
+        self.progress_2.setValue(50)
+        
+        
+    def viewVideo(self):
+        cap = cv2.VideoCapture(self.path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        sleep_ms = int(numpy.round((1 / fps) * 500))
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                rgbimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, c = rgbimage.shape
+                qimg = QImage(rgbimage.data, w, h, w * c, QImage.Format_RGB888)
+                pixmap = QPixmap(qimg)
+                
+                p = pixmap.scaled(1400, 700, Qt.IgnoreAspectRatio)
+                self.label_8.setPixmap(p)
+                self.label_8.update()
+                if cv2.waitKey(sleep_ms) == ord('q'):
+                    break
+            else:
+                cap = cv2.VideoCapture(self.path)
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                sleep_ms = int(numpy.round((1 / fps) * 500))
+        cap.release()
+        cv2.destroyAllWindows()
 
-        table.setItem(0, 0, QTableWidgetItem('test.cpp'))
-        table.setItem(1, 0, QTableWidgetItem('1010101001001...'))
-        table.setItem(2, 0, QTableWidgetItem('http://123.123.123.123:5000'))
-        table.setItem(3, 0, QTableWidgetItem('comparison.cpp'))
-        table.setItem(4, 0, QTableWidgetItem('0.7'))
-        
-        table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        
-        return table
-    
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = Main()
+    main.show()
     sys.exit(app.exec_())
