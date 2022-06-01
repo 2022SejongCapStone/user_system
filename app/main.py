@@ -1,4 +1,5 @@
 import sys
+import time
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
@@ -22,20 +23,11 @@ class Main(QDialog):
         layout_1 = QVBoxLayout()
         layout_2 = QVBoxLayout()
         layout_3 = QVBoxLayout()
-        layout_4 = QVBoxLayout()
-
-        # button_1 = QPushButton("button_1")
-        # button_2 = QPushButton("button_2")
-        # button_3 = QPushButton("button_3")
         
         table = self.make_table()
-        layout_4.addWidget(table)
-        
-        layout_2.addLayout(layout_4)
-
-        # layout_1.addWidget(button_1)
-        # layout_2.addWidget(button_2)
-        # layout_3.addWidget(button_3)
+        layout_2.addWidget(table)
+        table = self.make_table()
+        layout_2.addWidget(table)
 
         frame_1.setLayout(layout_1)
         frame_2.setLayout(layout_2)
@@ -63,10 +55,8 @@ class Main(QDialog):
     def make_table(self):
         table = QTableWidget(self)
         table.resize(300, 200)
-        # 표의 크기를 지정
         table.setColumnCount(1)
         table.setRowCount(5)
-        # 제목 지정
         table.horizontalHeader().setVisible(False)
         header = table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -74,15 +64,16 @@ class Main(QDialog):
             ['파일 이름', '수신 데이터', '발견한 URL', '비교 대상', '유사도']
         )
 
-        # 셀 내용 채우기
         table.setItem(0, 0, QTableWidgetItem('test.cpp'))
         table.setItem(1, 0, QTableWidgetItem('1010101001001...'))
         table.setItem(2, 0, QTableWidgetItem('http://123.123.123.123:5000'))
         table.setItem(3, 0, QTableWidgetItem('comparison.cpp'))
         table.setItem(4, 0, QTableWidgetItem('0.7'))
         
+        table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        
         return table
-
+    
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = Main()
