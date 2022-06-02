@@ -2,6 +2,7 @@ import sys, os
 import time
 import threading
 import psutil
+import socket
 import cv2
 import numpy
 from PyQt5.QtGui import *
@@ -17,12 +18,24 @@ class Main(QDialog):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.host = jm.get_secret("SERVERIP")
+        self.port = jm.get_secret("SERVERPORT")
+        self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.path = '../src/search.mp4'
         self.string = "Test Text"
+        self.labelstring1 = ""
+        self.labelstring2 = ""
+        self.labelstring3 = ""
         self.signalofprogress = signal.UpdateProgressBar()
         self.signalofprogress.signal.connect(self.updateProgressBar)
         self.signaloftextedit = signal.UpdateTextEdit()
         self.signaloftextedit.signal.connect(self.updateTextEdit)
+        self.signaloflabel1 = signal.UpdateLabel()
+        self.signaloflabel1.signal.connect(self.updateLabel1)
+        self.signaloflabel2 = signal.UpdateLabel()
+        self.signaloflabel2.signal.connect(self.updateLabel2)
+        self.signaloflabel3 = signal.UpdateLabel()
+        self.signaloflabel3.signal.connect(self.updateLabel3)
         self.printText("init UI complete")
         self.makeThread()
         self.printText("start Thread")
@@ -218,7 +231,18 @@ class Main(QDialog):
     
     
     def clientSocketFlow(self):
-        return
+        try:
+            self.clientsocket.connect((self.host, self.port))
+            while True:
+                self.labelstring1 = self.clientsocket.recv(1500)
+                self.signaloflabel1.run()
+                # after many things...
+                self.clientsocket.sendall(b"Well Interacting")
+                self.labelstring3 = self.clientsocket.recv(1500)
+                self.signaloflabel3.run()
+        except:
+            self.clientsocket.close()
+            return
     
     
     def printText(self, string):
@@ -233,11 +257,26 @@ class Main(QDialog):
         memory = int(psutil.virtual_memory().percent)
         self.progress_1.setValue(cpu)
         self.progress_2.setValue(memory)
+
     
     @pyqtSlot()
     def updateTextEdit(self):
         self.textedit.append(self.string)
         
+        
+    @pyqtSlot()
+    def updateLabel1(self):
+        self.label_1.setText(str(self.labelstring1))
+        
+        
+    @pyqtSlot()
+    def updateLabel2(self):
+        self.label_2.setText(str(self.labelstring2))
+        
+        
+    @pyqtSlot()
+    def updateLabel3(self):
+        self.label_4.setText(str(self.labelstring3))
         
         
 if __name__ == '__main__':
