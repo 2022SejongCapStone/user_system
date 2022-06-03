@@ -67,7 +67,7 @@ class Main(QDialog):
                                       "QGroupBox {border: 1px solid black; background-color: rgb(255, 255, 255);}")
         
         self.vbox_1 = QVBoxLayout()
-        self.label_1 = QLabel('0', self)
+        self.label_1 = QLabel('-', self)
         self.label_1.setFont(self.font_2)
         self.vbox_1.addWidget(self.label_1)
         self.groupbox_1.setLayout(self.vbox_1)
@@ -80,13 +80,13 @@ class Main(QDialog):
         self.hbox_1 = QHBoxLayout()
         self.hbox_2 = QHBoxLayout()
         self.vbox_2 = QVBoxLayout()
-        self.label_2 = QLabel('0', self)
+        self.label_2 = QLabel('-', self)
         self.label_2.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.label_2.setFixedWidth(210)
         self.label_2.setFont(self.font_2)
         self.label_3 = QLabel('File Name', self)
         self.label_3.setFont(self.font_3)
-        self.label_4 = QLabel('0', self)
+        self.label_4 = QLabel('-', self)
         self.label_4.setStyleSheet("QLabel {color: rgb(255, 0, 0);}")
         self.label_4.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.label_4.setFixedWidth(210)
@@ -235,11 +235,22 @@ class Main(QDialog):
             self.clientsocket.connect((self.host, self.port))
             while True:
                 self.labelstring1 = self.clientsocket.recv(1500)
+                self.path = '../src/Found.mp4'
                 self.signaloflabel1.run()
+                time.sleep(5)
                 # after many things...
+                self.path = '../src/comparison.mp4'
+                time.sleep(5)
                 self.clientsocket.sendall(b"Well Interacting")
                 self.labelstring3 = self.clientsocket.recv(1500)
                 self.signaloflabel3.run()
+                self.path = '../src/warning.mp4'
+                time.sleep(5)
+                self.path = '../src/request.mp4'
+                time.sleep(5)
+                self.path = '../src/report.mp4'
+                time.sleep(5)
+                self.path = '../src/search.mp4'
         except:
             self.clientsocket.close()
             return
