@@ -244,8 +244,8 @@ class Main(QDialog):
                 server_enc_simhash_list = []
                 count = self.clientsocket.recv(1500)
                 self.path = '../src/Found.mp4'
+                print(str(count))
                 count = int(count)
-                print(count)
                 for i in range(count):
                     data = []
                     while True:
@@ -257,12 +257,11 @@ class Main(QDialog):
                     self.printText("---Fragment Get---\n" + str(data))
                     data_arr = pickle.loads(b"".join(data))
                     server_enc_simhash_list.append(data_arr)
-                print("======================")
                 enc_HD_dict = {}
+                self.path = '../src/comparison.mp4'
                 with open('../test.p','rb') as f:
                     obj = pickle.load(f)
                     #Start Comparing process
-                print("======================")
                 enc_HD_dict_list = []
                 for data in server_enc_simhash_list:
                     enc_HD_dict = {} # k,v = reprisentative_id , enc_HD
@@ -282,6 +281,33 @@ class Main(QDialog):
                     enc_HD_dict_list.append(enc_HD_dict)
                 self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
                 self.clientsocket.sendall("End".encode())
+                absence = self.clientsocket.recv(1500)
+                print(str(absence))
+                if b"Y" == absence:
+                    self.path = '../src/warning.mp4'
+                    data = []
+                    while True:
+                        packet = self.clientsocket.recv(4096)
+                        if b"End" in packet:
+                            data.append(packet[:packet.find(b"End")])
+                            break
+                        data.append(packet)
+                    reportdict = pickle.loads(b"".join(data))
+                    # print(reportdict)
+                    for idx, val in obj.items(): 
+                        for reprisentative_cfid, cloneclass in val.items():
+                            for cfid, code_fragment in cloneclass.items():
+                                if cfid == reportdict["clnt_cfid"]:
+                                    reportdict["clnt_file"] = code_fragment[0]
+                                    reportdict["clnt_startline"] = code_fragment[1]
+                                    reportdict["clnt_endline"] = code_fragment[2]
+                                    self.path = '../src/request.mp4'
+                                    break
+                    print(reportdict)
+                    self.path = '../src/report.mp4'
+                    time.sleep(7)
+                else:
+                    continue
                 ## SEND enc_HD_dict_list to server
                 # self.path = '../src/Found.mp4'
                 # self.signaloflabel1.run()
