@@ -1,3 +1,4 @@
+from re import S
 import sys, os
 import time
 import threading
@@ -5,13 +6,15 @@ import psutil
 import socket
 import cv2
 import numpy
+import pickle
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from src import jsonmodule as jm
 from src import signal
-
+from src import AdditiveElgamal as ae
+from src import compare as cp
 
 class Main(QDialog):
     
@@ -233,25 +236,71 @@ class Main(QDialog):
     def clientSocketFlow(self):
         try:
             self.clientsocket.connect((self.host, self.port))
+            publickey = pickle.loads(self.clientsocket.recv(1500))
+            self.printText(str(publickey))
+            self.pubkey = ae.construct_additive((publickey['P'], publickey['G'], publickey['Y']))
             while True:
-                self.labelstring1 = self.clientsocket.recv(1500)
-                self.path = '../src/Found.mp4'
-                self.signaloflabel1.run()
-                time.sleep(5)
-                # after many things...
-                self.path = '../src/comparison.mp4'
-                time.sleep(5)
-                self.clientsocket.sendall(b"Well Interacting")
-                self.labelstring3 = self.clientsocket.recv(1500)
-                self.signaloflabel3.run()
-                self.path = '../src/warning.mp4'
-                time.sleep(5)
-                self.path = '../src/request.mp4'
-                time.sleep(5)
-                self.path = '../src/report.mp4'
-                time.sleep(5)
                 self.path = '../src/search.mp4'
-        except:
+                server_enc_simhash_list = []
+                count = self.clientsocket.recv(1500)
+                self.path = '../src/Found.mp4'
+                count = int(count)
+                print(count)
+                for i in range(count):
+                    data = []
+                    while True:
+                        packet = self.clientsocket.recv(4096)
+                        if b"End" in packet:
+                            data.append(packet[:packet.find(b"End")])
+                            break
+                        data.append(packet)
+                    self.printText("---Fragment Get---\n" + str(data))
+                    data_arr = pickle.loads(b"".join(data))
+                    server_enc_simhash_list.append(data_arr)
+                print("======================")
+                enc_HD_dict = {}
+                with open('../test.p','rb') as f:
+                    obj = pickle.load(f)
+                    #Start Comparing process
+                print("======================")
+                enc_HD_dict_list = []
+                for data in server_enc_simhash_list:
+                    enc_HD_dict = {} # k,v = reprisentative_id , enc_HD
+                    server_idx = list(data.keys())[0]
+                    enc_server_simhash = list(data.values())[0]
+
+                    for idx, val in obj.items(): 
+                        if not (idx == server_idx):                                                 # JSON in STR , LATER USE PICKLE instead
+                            continue
+                        for reprisentative_cfid, cloneclass in val.items():
+                            for cfid, code_fragment in cloneclass.items():
+                                if not ( cfid == reprisentative_cfid):
+                                    continue
+                                simhash = code_fragment[3]
+                                enc_HD_dict[reprisentative_cfid] = cp.get_enc_HD(self.pubkey, simhash, enc_server_simhash)
+                        break
+                    enc_HD_dict_list.append(enc_HD_dict)
+                self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
+                self.clientsocket.sendall("End".encode())
+                ## SEND enc_HD_dict_list to server
+                # self.path = '../src/Found.mp4'
+                # self.signaloflabel1.run()
+                # time.sleep(5)
+                # # after many things...
+                # self.path = '../src/comparison.mp4'
+                # time.sleep(5)
+                # self.clientsocket.sendall(b"Well Interacting")
+                # self.labelstring3 = self.clientsocket.recv(1500)
+                # self.signaloflabel3.run()
+                # self.path = '../src/warning.mp4'
+                # time.sleep(5)
+                # self.path = '../src/request.mp4'
+                # time.sleep(5)
+                # self.path = '../src/report.mp4'
+                # time.sleep(5)
+                # self.path = '../src/search.mp4'
+        except Exception as e:
+            print("Error", e)
             self.clientsocket.close()
             return
     
@@ -272,7 +321,7 @@ class Main(QDialog):
     
     @pyqtSlot()
     def updateTextEdit(self):
-        self.textedit.append(self.string)
+        self.textedit.append(time.strftime('%Y-%m-%d', time.localtime(time.time())) + time.strftime(' %c', time.localtime(time.time())) + " - INFO [{}]".format(os.path.basename(__file__)) + self.string)
         
         
     @pyqtSlot()
