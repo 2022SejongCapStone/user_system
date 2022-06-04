@@ -242,16 +242,16 @@ class Main(QDialog):
             while True:
                 self.path = '../src/search.mp4'
                 server_enc_simhash_list = []
-                count = self.clientsocket.recv(1500)
+                count = self.clientsocket.recv(10)
                 self.path = '../src/Found.mp4'
-                print(str(count))
+                count = count.strip(b'A')
+                print("Good!: " + str(count))
                 count = int(count)
                 for i in range(count):
                     data = []
                     while True:
-                        packet = self.clientsocket.recv(4096)
-                        if b"End" in packet:
-                            data.append(packet[:packet.find(b"End")])
+                        packet = self.clientsocket.recv(1500)
+                        if b"EndofPacket" == packet:
                             break
                         data.append(packet)
                     self.printText("---Fragment Get---\n" + str(data))
@@ -269,7 +269,7 @@ class Main(QDialog):
                     enc_server_simhash = list(data.values())[0]
 
                     for idx, val in obj.items(): 
-                        if not (idx == server_idx):                                                 # JSON in STR , LATER USE PICKLE instead
+                        if not (idx == server_idx):
                             continue
                         for reprisentative_cfid, cloneclass in val.items():
                             for cfid, code_fragment in cloneclass.items():
@@ -280,20 +280,20 @@ class Main(QDialog):
                         break
                     enc_HD_dict_list.append(enc_HD_dict)
                 self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
-                self.clientsocket.sendall("End".encode())
-                absence = self.clientsocket.recv(1500)
+                time.sleep(1)
+                self.clientsocket.sendall("EndofPacket".encode())
+                time.sleep(1)
+                absence = self.clientsocket.recv(10)
                 print(str(absence))
-                if b"Y" == absence:
+                if b"YYYYYYYYYY" == absence:
                     self.path = '../src/warning.mp4'
                     data = []
                     while True:
-                        packet = self.clientsocket.recv(4096)
-                        if b"End" in packet:
-                            data.append(packet[:packet.find(b"End")])
+                        packet = self.clientsocket.recv(1500)
+                        if b"EndofPacket" == packet:
                             break
                         data.append(packet)
                     reportdict = pickle.loads(b"".join(data))
-                    # print(reportdict)
                     for idx, val in obj.items(): 
                         for reprisentative_cfid, cloneclass in val.items():
                             for cfid, code_fragment in cloneclass.items():
@@ -308,23 +308,6 @@ class Main(QDialog):
                     time.sleep(7)
                 else:
                     continue
-                ## SEND enc_HD_dict_list to server
-                # self.path = '../src/Found.mp4'
-                # self.signaloflabel1.run()
-                # time.sleep(5)
-                # # after many things...
-                # self.path = '../src/comparison.mp4'
-                # time.sleep(5)
-                # self.clientsocket.sendall(b"Well Interacting")
-                # self.labelstring3 = self.clientsocket.recv(1500)
-                # self.signaloflabel3.run()
-                # self.path = '../src/warning.mp4'
-                # time.sleep(5)
-                # self.path = '../src/request.mp4'
-                # time.sleep(5)
-                # self.path = '../src/report.mp4'
-                # time.sleep(5)
-                # self.path = '../src/search.mp4'
         except Exception as e:
             print("Error", e)
             self.clientsocket.close()
@@ -368,5 +351,5 @@ class Main(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = Main()
-    main.show()
+    #main.show()
     sys.exit(app.exec_())
