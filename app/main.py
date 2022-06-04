@@ -94,7 +94,7 @@ class Main(QDialog):
         self.label_4.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.label_4.setFixedWidth(210)
         self.label_4.setFont(self.font_2)
-        self.label_5 = QLabel('Similarity', self)
+        self.label_5 = QLabel('Code Line', self)
         self.label_5.setFont(self.font_3)
         self.label_5.setStyleSheet("QLabel {color: rgb(255, 0, 0);}")
         self.hbox_1.addWidget(self.label_3)
@@ -208,7 +208,8 @@ class Main(QDialog):
         
         
     def viewVideoFlow(self):
-        cap = cv2.VideoCapture(self.path)
+        path = self.path
+        cap = cv2.VideoCapture(path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         sleep_ms = int(numpy.round((1 / fps) * 500))
         while True:
@@ -224,10 +225,11 @@ class Main(QDialog):
                 self.label_8.update()
                 if cv2.waitKey(sleep_ms) == ord('q'):
                     break
-            else:
-                cap = cv2.VideoCapture(self.path)
-                fps = cap.get(cv2.CAP_PROP_FPS)
-                sleep_ms = int(numpy.round((1 / fps) * 500))
+            elif ret != True and path == "../src/search.mp4":
+                cap = cv2.VideoCapture(path)
+            if self.path != path:
+                path = self.path
+                cap = cv2.VideoCapture(path)
         cap.release()
         cv2.destroyAllWindows()
         return
@@ -243,7 +245,7 @@ class Main(QDialog):
                 self.path = '../src/search.mp4'
                 server_enc_simhash_list = []
                 count = self.clientsocket.recv(10)
-                self.path = '../src/Found.mp4'
+                self.path = '../src/found.mp4'
                 count = count.strip(b'A')
                 print("Good!: " + str(count))
                 count = int(count)
@@ -258,7 +260,6 @@ class Main(QDialog):
                     data_arr = pickle.loads(b"".join(data))
                     server_enc_simhash_list.append(data_arr)
                 enc_HD_dict = {}
-                self.path = '../src/comparison.mp4'
                 with open('../test.p','rb') as f:
                     obj = pickle.load(f)
                     #Start Comparing process
@@ -277,8 +278,17 @@ class Main(QDialog):
                                     continue
                                 simhash = code_fragment[3]
                                 enc_HD_dict[reprisentative_cfid] = cp.get_enc_HD(self.pubkey, simhash, enc_server_simhash)
+                                self.printLabel1(str(enc_HD_dict[reprisentative_cfid])[:25] +
+                                                 "\n" + 
+                                                 str(enc_HD_dict[reprisentative_cfid])[25:50] +
+                                                 "\n" + 
+                                                 str(enc_HD_dict[reprisentative_cfid])[50:75] +
+                                                 "\n" +
+                                                 str(enc_HD_dict[reprisentative_cfid])[75:100] +
+                                                 "...")
                         break
                     enc_HD_dict_list.append(enc_HD_dict)
+                self.path = '../src/sendsimvalue.mp4'
                 self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
                 time.sleep(1)
                 self.clientsocket.sendall("EndofPacket".encode())
@@ -286,7 +296,7 @@ class Main(QDialog):
                 absence = self.clientsocket.recv(10)
                 print(str(absence))
                 if b"YYYYYYYYYY" == absence:
-                    self.path = '../src/warning.mp4'
+                    self.path = '../src/highsimilarity.mp4'
                     data = []
                     while True:
                         packet = self.clientsocket.recv(1500)
@@ -298,15 +308,20 @@ class Main(QDialog):
                         for reprisentative_cfid, cloneclass in val.items():
                             for cfid, code_fragment in cloneclass.items():
                                 if cfid == reportdict["clnt_cfid"]:
-                                    reportdict["clnt_file"] = code_fragment[0]
-                                    reportdict["clnt_startline"] = code_fragment[1]
+                                    reportdict["clnt_file"] = code_fragment[1]
+                                    reportdict["clnt_startline"] = code_fragment[0]
                                     reportdict["clnt_endline"] = code_fragment[2]
                                     self.path = '../src/request.mp4'
                                     break
-                    print(reportdict)
-                    self.path = '../src/report.mp4'
-                    time.sleep(7)
+                    self.printLabel2(reportdict["clnt_file"])
+                    self.printLabel3(str(reportdict["clnt_startline"]) + "~" + str(reportdict["clnt_endline"]))
+                    time.sleep(6)
+                    self.printLabel1("-")
+                    self.printLabel2("-")
+                    self.printLabel3("-")
                 else:
+                    self.path = '../src/lowsimilarity.mp4'
+                    time.sleep(4)
                     continue
         except Exception as e:
             print("Error", e)
@@ -317,6 +332,24 @@ class Main(QDialog):
     def printText(self, string):
         self.string = string
         self.signaloftextedit.run()
+        return
+    
+    
+    def printLabel1(self, string):
+        self.labelstring1 = string
+        self.signaloflabel1.run()
+        return
+    
+    
+    def printLabel2(self, string):
+        self.labelstring2 = string
+        self.signaloflabel2.run()
+        return
+    
+    
+    def printLabel3(self, string):
+        self.labelstring3 = string
+        self.signaloflabel3.run()
         return
         
 
