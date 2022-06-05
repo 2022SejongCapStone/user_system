@@ -125,7 +125,6 @@ def getHammingDistance(simhash1, simhash2):
   return hamming
 
 def getContent(filename, s, e):
-  #filename = "C:\\Users\\USER\\" + ("\\".join(filename.split("/")[3:]))[:-8]
   output = ""
   with open(filename, "r") as f:
     for i in range(1, s):
@@ -205,6 +204,7 @@ def ServerGroupDictToHTML(ServerGroupDict:dict):
 def MonitoringDictToHTML(MonitoringDict:dict, serv_content_simhash):
   OutputHTML = "\t"*5 + "<div>\n"
   OutputHTML += "\t"*6 + f"""<a onclick="javascript:ShowHide('frag-{MonitoringDict['clnt_cfid']}')" href="javascript:;" style="word-break: break-all;">{MonitoringDict['darkweb_url']}: {MonitoringDict['serv_startline']}-{MonitoringDict['serv_endline']}</a><br><br>\n"""
+  OutputHTML += "\t"*6 + f"""<a href="{MonitoringDict['darkweb_url']}" style="word-break: break-all;">Dark Web address where the file was found(Click to Go)</a><br><br>\n"""
   OutputHTML += "\t"*6 + f"simhash : {format(serv_content_simhash, '#066b')}\n"
   OutputHTML += "\t"*5 + "</div>\n"
 
@@ -217,7 +217,7 @@ def MonitoringDictToHTML(MonitoringDict:dict, serv_content_simhash):
   return OutputHTML
 
 def getHTMLCloneDOM(OutputDict:dict=ExpectedResponse):
-  print("[*]", OutputDict)
+  #print("[*]", OutputDict)
   serv_file = OutputDict['serv_file']
   serv_startline = OutputDict['serv_startline']
   serv_end = OutputDict['serv_endline']

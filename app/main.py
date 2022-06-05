@@ -32,7 +32,6 @@ class Main(QDialog):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.emailclient = rp.SMTPclient()
         self.host = jm.get_secret("SERVERIP")
         self.port = jm.get_secret("SERVERPORT")
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -339,6 +338,7 @@ class Main(QDialog):
                     htmlreport = ma.getHTMLCloneDOM(reportdict)
                     with open("../report/reportfile.html", "w") as f:
                         f.write(htmlreport)
+                    self.emailclient = rp.SMTPclient()
                     self.emailclient.makeBody(content)
                     self.emailclient.attachFile(["../report/reportfile.html"])
                     self.emailclient.sendMail()
