@@ -272,19 +272,19 @@ class Main(QDialog):
                     for idx, val in obj.items(): 
                         if not (idx == server_idx):
                             continue
-                        for reprisentative_cfid, cloneclass in val.items():
+                        for representative_cfid, cloneclass in val.items():
                             for cfid, code_fragment in cloneclass.items():
-                                if not ( cfid == reprisentative_cfid):
+                                if not ( cfid == representative_cfid):
                                     continue
                                 simhash = code_fragment[3]
-                                enc_HD_dict[reprisentative_cfid] = cp.get_enc_HD(self.pubkey, simhash, enc_server_simhash)
-                                self.printLabel1(str(enc_HD_dict[reprisentative_cfid])[:25] +
+                                enc_HD_dict[representative_cfid] = cp.get_enc_HD(self.pubkey, simhash, enc_server_simhash)
+                                self.printLabel1(str(enc_HD_dict[representative_cfid])[:25] +
                                                  "\n" + 
-                                                 str(enc_HD_dict[reprisentative_cfid])[25:50] +
+                                                 str(enc_HD_dict[representative_cfid])[25:50] +
                                                  "\n" + 
-                                                 str(enc_HD_dict[reprisentative_cfid])[50:75] +
+                                                 str(enc_HD_dict[representative_cfid])[50:75] +
                                                  "\n" +
-                                                 str(enc_HD_dict[reprisentative_cfid])[75:100] +
+                                                 str(enc_HD_dict[representative_cfid])[75:100] +
                                                  "...")
                         break
                     enc_HD_dict_list.append(enc_HD_dict)
@@ -305,16 +305,18 @@ class Main(QDialog):
                         data.append(packet)
                     reportdict = pickle.loads(b"".join(data))
                     for idx, val in obj.items(): 
-                        for reprisentative_cfid, cloneclass in val.items():
-                            for cfid, code_fragment in cloneclass.items():
-                                if cfid == reportdict["clnt_cfid"]:
-                                    reportdict["clnt_file"] = code_fragment[1]
-                                    reportdict["clnt_startline"] = code_fragment[0]
-                                    reportdict["clnt_endline"] = code_fragment[2]
-                                    self.path = '../src/request.mp4'
-                                    break
-                    self.printLabel2(reportdict["clnt_file"])
-                    self.printLabel3(str(reportdict["clnt_startline"]) + "~" + str(reportdict["clnt_endline"]))
+                        for representative_cfid, cloneclass in val.items():
+                            #for cfid, code_fragment in cloneclass.items():
+                            if representative_cfid == reportdict["clnt_cfid"]:
+                                reportdict["clnt_cloneclass"] = cloneclass
+                                # reportdict["clnt_file"] = code_fragment[1]
+                                # reportdict["clnt_startline"] = code_fragment[0]
+                                # reportdict["clnt_endline"] = code_fragment[2]
+                                self.path = '../src/request.mp4'
+                                break
+                    print(reportdict)
+                    self.printLabel2(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][:10] + "\n" + reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][10:])
+                    self.printLabel3(str(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][0]) + "~" + str(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][2]))
                     time.sleep(6)
                     self.printLabel1("-")
                     self.printLabel2("-")
