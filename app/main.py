@@ -15,12 +15,24 @@ from src import jsonmodule as jm
 from src import signal
 from src import AdditiveElgamal as ae
 from src import compare as cp
+from src import report as rp
+from src import message as ma
+
+content = '''
+<h1>파일 유출이 탐지되었습니다!</h1>
+<h2>지금 바로 첨부된 파일을 열어 유출된 파일 정보를 확인하시길 바랍니다!</h2><br><br><br><br>
+
+
+저희 서비스를 사용해주셔서 감사합니다!<br>
+저희는 세종대학교 정보보호학과 뭉게구름입니다😊
+'''
 
 class Main(QDialog):
     
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.emailclient = rp.SMTPclient()
         self.host = jm.get_secret("SERVERIP")
         self.port = jm.get_secret("SERVERPORT")
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,6 +54,7 @@ class Main(QDialog):
         self.printText("init UI complete")
         self.makeThread()
         self.printText("start Thread")
+
 
     def initUI(self):
         self.main_layout = QVBoxLayout()
@@ -185,8 +198,8 @@ class Main(QDialog):
         self.setWindowTitle('DarkWeb Monitoring System User View')
         self.showMaximized()
         return
-        
-        
+
+
     def makeThread(self):
         self.videothread = threading.Thread(target=self.viewVideoFlow, args=[])
         self.videothread.daemon = True
@@ -198,15 +211,15 @@ class Main(QDialog):
         self.computethread.start()
         self.socketthread.start()
         return
-        
-        
+
+
     def setComputeValueFlow(self):
         while True:
             self.signalofprogress.run()
             time.sleep(1)
         return
-        
-        
+
+
     def viewVideoFlow(self):
         path = self.path
         cap = cv2.VideoCapture(path)
@@ -233,20 +246,22 @@ class Main(QDialog):
         cap.release()
         cv2.destroyAllWindows()
         return
-    
-    
+
+
     def clientSocketFlow(self):
         try:
             self.clientsocket.connect((self.host, self.port))
             publickey = pickle.loads(self.clientsocket.recv(1500))
-            self.printText(str(publickey))
+            self.printText("Get public key from server")
             self.pubkey = ae.construct_additive((publickey['P'], publickey['G'], publickey['Y']))
             while True:
+                self.printText("Server now searching new files")
                 self.path = '../src/search.mp4'
                 server_enc_simhash_list = []
                 count = self.clientsocket.recv(10)
                 self.path = '../src/found.mp4'
                 count = count.strip(b'A')
+                self.printText("File Found on Dark Web")
                 print("Good!: " + str(count))
                 count = int(count)
                 for i in range(count):
@@ -256,13 +271,14 @@ class Main(QDialog):
                         if b"EndofPacket" == packet:
                             break
                         data.append(packet)
-                    self.printText("---Fragment Get---\n" + str(data))
+                    self.printText("Fragment Get\n")
                     data_arr = pickle.loads(b"".join(data))
                     server_enc_simhash_list.append(data_arr)
                 enc_HD_dict = {}
                 with open('../test.p','rb') as f:
                     obj = pickle.load(f)
                     #Start Comparing process
+                self.printText("COMPARING START!...\n")
                 enc_HD_dict_list = []
                 for data in server_enc_simhash_list:
                     enc_HD_dict = {} # k,v = reprisentative_id , enc_HD
@@ -288,6 +304,7 @@ class Main(QDialog):
                                                  "...")
                         break
                     enc_HD_dict_list.append(enc_HD_dict)
+                self.printText("send sim value to server(encrypt)\n")
                 self.path = '../src/sendsimvalue.mp4'
                 self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
                 time.sleep(1)
@@ -296,6 +313,7 @@ class Main(QDialog):
                 absence = self.clientsocket.recv(10)
                 print(str(absence))
                 if b"YYYYYYYYYY" == absence:
+                    self.printText("WARNING!\n")
                     self.path = '../src/highsimilarity.mp4'
                     data = []
                     while True:
@@ -314,14 +332,22 @@ class Main(QDialog):
                                 # reportdict["clnt_endline"] = code_fragment[2]
                                 self.path = '../src/request.mp4'
                                 break
-                    print(reportdict)
-                    self.printLabel2(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][:10] + "\n" + reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][10:])
+                    self.printLabel2(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][:15] + "\n" + 
+                                     reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][1][15:])
                     self.printLabel3(str(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][0]) + "~" + str(reportdict["clnt_cloneclass"][reportdict["clnt_cfid"]][2]))
-                    time.sleep(6)
+                    self.printText("print all of data\n")
+                    htmlreport = ma.getHTMLCloneDOM(reportdict)
+                    with open("../report/reportfile.html", "w") as f:
+                        f.write(htmlreport)
+                    self.emailclient.makeBody(content)
+                    self.emailclient.attachFile(["../report/reportfile.html"])
+                    self.emailclient.sendMail()
+                    time.sleep(4)
                     self.printLabel1("-")
                     self.printLabel2("-")
                     self.printLabel3("-")
                 else:
+                    self.printText("there is no file in our system\n")
                     self.path = '../src/lowsimilarity.mp4'
                     time.sleep(4)
                     continue
@@ -329,31 +355,31 @@ class Main(QDialog):
             print("Error", e)
             self.clientsocket.close()
             return
-    
-    
+
+
     def printText(self, string):
         self.string = string
         self.signaloftextedit.run()
         return
-    
-    
+
+
     def printLabel1(self, string):
         self.labelstring1 = string
         self.signaloflabel1.run()
         return
-    
-    
+
+
     def printLabel2(self, string):
         self.labelstring2 = string
         self.signaloflabel2.run()
         return
-    
-    
+
+
     def printLabel3(self, string):
         self.labelstring3 = string
         self.signaloflabel3.run()
         return
-        
+
 
     @pyqtSlot()
     def updateProgressBar(self):
@@ -362,27 +388,27 @@ class Main(QDialog):
         self.progress_1.setValue(cpu)
         self.progress_2.setValue(memory)
 
-    
+
     @pyqtSlot()
     def updateTextEdit(self):
         self.textedit.append(time.strftime('%Y-%m-%d', time.localtime(time.time())) + time.strftime(' %c', time.localtime(time.time())) + " - INFO [{}]".format(os.path.basename(__file__)) + self.string)
-        
-        
+
+
     @pyqtSlot()
     def updateLabel1(self):
         self.label_1.setText(str(self.labelstring1))
-        
-        
+
+
     @pyqtSlot()
     def updateLabel2(self):
         self.label_2.setText(str(self.labelstring2))
-        
-        
+
+
     @pyqtSlot()
     def updateLabel3(self):
         self.label_4.setText(str(self.labelstring3))
-        
-        
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = Main()
