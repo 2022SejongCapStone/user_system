@@ -270,14 +270,14 @@ class Main(QDialog):
                         if b"EndofPacket" == packet:
                             break
                         data.append(packet)
-                    self.printText("Fragment Get\n")
+                    self.printText("Fragment Get")
                     data_arr = pickle.loads(b"".join(data))
                     server_enc_simhash_list.append(data_arr)
                 enc_HD_dict = {}
                 with open('../test.p','rb') as f:
                     obj = pickle.load(f)
                     #Start Comparing process
-                self.printText("COMPARING START!...\n")
+                self.printText("COMPARING START!...")
                 enc_HD_dict_list = []
                 for data in server_enc_simhash_list:
                     enc_HD_dict = {} # k,v = reprisentative_id , enc_HD
@@ -303,7 +303,7 @@ class Main(QDialog):
                                                  "...")
                         break
                     enc_HD_dict_list.append(enc_HD_dict)
-                self.printText("send sim value to server(encrypt)\n")
+                self.printText("send sim value to server(encrypt)")
                 self.path = '../src/sendsimvalue.mp4'
                 self.clientsocket.sendall(pickle.dumps(enc_HD_dict_list))
                 time.sleep(1)
@@ -312,7 +312,7 @@ class Main(QDialog):
                 absence = self.clientsocket.recv(10)
                 print(str(absence))
                 if b"YYYYYYYYYY" == absence:
-                    self.printText("WARNING!\n")
+                    self.printText("WARNING!")
                     self.path = '../src/highsimilarity.mp4'
                     data = []
                     while True:
