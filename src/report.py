@@ -37,7 +37,7 @@ class SMTPclient():
             
     def sendMail(self):
         mailServer = smtplib.SMTP_SSL('smtp.gmail.com')
-        mailServer.login(jm.get_secret("MSGFROM"), '')
+        mailServer.login(jm.get_secret("MSGFROM"), jm.get_secret("TOKEN"))
         mailServer.send_message(self.msg)
         mailServer.quit()
 
